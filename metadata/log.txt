@@ -1,1 +1,2 @@
-Downloaded on: 01-29-2024T13:21:47
+Error in nhanesA::nhanesCodebook(): no applicable method for 'xml_find_first' applied to an object of class "xml_document" (Table-Variable: DXXAG_D-) 
+Downloaded on: 08-31-2024T16:11:02

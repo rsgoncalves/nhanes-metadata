@@ -4,7 +4,7 @@ import text2term
 import preprocess_metadata
 import csv
 
-__version__ = "0.9.4"
+__version__ = "0.10.0"
 
 # How the stack looks:
 #                                  map_to_ontology
@@ -102,6 +102,7 @@ def map_data(source_df, labels_column, label_ids_column, tags_column=""):
         ontologies_table=TARGET_ONTOLOGIES)
     return mappings_df
 
+
 def get_terms_and_ids(nhanes_table, label_col, label_id_col, tags_column=""):
     if tags_column != "":
         terms = []
@@ -132,10 +133,12 @@ def expand_composite_ids(df, id_1_col, id_2_col, mappings_df_id_col, sep="-"):
 
 def top_mappings(mappings_df):
     # group the mappings data frame by the composite identifier and get the row with the maximum score for each group
-    max_scores = mappings_df.groupby([NHANES_VARIABLE_ID_COL, NHANES_TABLE_ID_COL])[MAPPING_SCORE_COL].max().reset_index()
+    max_scores = mappings_df.groupby([NHANES_VARIABLE_ID_COL, NHANES_TABLE_ID_COL])[
+        MAPPING_SCORE_COL].max().reset_index()
 
     # merge the original data frame with the maximum scores data frame on the composite unique identifier and the score
-    top_mappings_df = pd.merge(mappings_df, max_scores, on=[NHANES_VARIABLE_ID_COL, NHANES_TABLE_ID_COL, MAPPING_SCORE_COL])
+    top_mappings_df = pd.merge(mappings_df, max_scores,
+                               on=[NHANES_VARIABLE_ID_COL, NHANES_TABLE_ID_COL, MAPPING_SCORE_COL])
     return top_mappings_df
 
 
@@ -206,7 +209,8 @@ def map_nhanes_variables(variables_file=PROCESSED_NHANES_VARIABLES, preprocess=F
     mappings = remove_empty_duplicates(mappings)
     mappings = readd_oral_health_mappings(mappings)
     if save_mappings:
-        save_mappings_file(mappings, output_file_label="nhanes_variables", top_mappings_only=top_mappings_only, sort=True)
+        save_mappings_file(mappings, output_file_label="nhanes_variables", top_mappings_only=top_mappings_only,
+                           sort=True)
     if flag_mapped:
         updated_nhanes_variables = flag_mapped_variables(input_df, mappings)
         updated_nhanes_variables = updated_nhanes_variables.drop(columns=[NHANES_VARIABLE_COMBINED_ID_COL])
@@ -224,6 +228,7 @@ def remove_empty_duplicates(df):
 
     return final_df
 
+
 def readd_oral_health_mappings(df):
     oral_health_mappings_df = pd.read_csv(NHANES_ORAL_HEALTH_MAPPINGS, sep='\t')
     new_df = pd.DataFrame(columns=df.columns)
@@ -237,14 +242,14 @@ def readd_oral_health_mappings(df):
     df = pd.concat([df, new_df], ignore_index=True)
     return df
 
+
 def map_nhanes_metadata(create_ontology_cache=False, preprocess_labels=False, save_mappings=False,
                         top_mappings_only=False, flag_mapped=False):
     if create_ontology_cache:
         text2term.cache_ontology_set(ontology_registry_path=TARGET_ONTOLOGIES)
-    nhanes_table_mappings = map_nhanes_tables(save_mappings=save_mappings)
-    nhanes_variable_mappings = map_nhanes_variables(preprocess=preprocess_labels, save_mappings=save_mappings,
-                                                    top_mappings_only=top_mappings_only, flag_mapped=flag_mapped)
-    return nhanes_table_mappings, nhanes_variable_mappings
+
+    return map_nhanes_variables(preprocess=preprocess_labels, save_mappings=save_mappings,
+                                top_mappings_only=top_mappings_only, flag_mapped=flag_mapped)
 
 
 def save_oral_health_tables(mappings_df):
@@ -259,8 +264,5 @@ def save_oral_health_tables(mappings_df):
 
 if __name__ == "__main__":
     make_cache = not text2term.cache_exists("EFO")  # Assume if one exists, they all do
-    table_mappings, variable_mappings = map_nhanes_metadata(create_ontology_cache=make_cache,
-                                                            preprocess_labels=True,
-                                                            top_mappings_only=True,
-                                                            save_mappings=True,
-                                                            flag_mapped=True)
+    map_nhanes_metadata(create_ontology_cache=make_cache, preprocess_labels=True,
+                        top_mappings_only=True, save_mappings=True, flag_mapped=True)
