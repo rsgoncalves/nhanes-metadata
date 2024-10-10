@@ -1,2 +1,2 @@
-Error in nhanesA::nhanesCodebook(): no applicable method for 'xml_find_first' applied to an object of class "xml_document" (Table-Variable: DXXAG_D-) 
-Downloaded on: 08-31-2024T16:11:02
+Error in nhanesA::nhanesCodebook(): could not find a web page at: /Users/rsgoncalves/Documents/Workspace/nhanes-snapshot/docs/MANIFEST.txt.html (Table-Variable: MANIFEST.txt-) 
+Downloaded on: 10-09-2024T20:54:17

@@ -4,14 +4,12 @@ library(nhanesA)
 library(progress)
 library(rvest)
 library(dplyr)
+library(xml2)
 
 
 TABLES_WITHOUT_CODEBOOKS <- c("DOC_2000", "DRXFCD_I", "DRXFCD_J", "DRXFMT", "FOODLK_C", "FOODLK_D", 
                               "LA_DEMO", "P_DRXFCD", "PAX80_G_R", "PAXLUX_G_R", "POOLTF_D", "POOLTF_E", 
                               "RXQ_DRUG", "SSUIFG_R", "VARLK_C", "VARLK_D", "VID_2_00", "YDQ", "DRXFMT_B")
-
-LIMITED_USE_TABLES <- c("HP_01_R", "HP2_01_R", "L11_2_R", "l13_2_r", "L16_2_R", "L19_2_R", "l25_2_r", 
-                        "SSH7N9_R", "SSHN10_R", "SSUE10_R", "VIT_2_R", "OCQ_D_R")
 
 
 # Get variable-level metadata from cached NHANES-snapshot at the specified location
@@ -55,8 +53,8 @@ get_variables_in_table <- function(table_name, nhanes_snapshot_folder) {
   table_codebooks = {}
   tryCatch({
     codebook_url <- paste0(nhanes_snapshot_folder, table_name, ".html")
-    # print(paste("Getting variables in table", codebook_url))
     table_codebooks <- nhanesCodebookFromURL(url=codebook_url)
+    doc_html_file <- read_html(codebook_url)
   }, error=function(msg) {
     log_missing_codebook("Error in nhanesA::nhanesCodebook()", conditionMessage(msg), table_name=table_name, variable_name="")
   }, warning=function(msg) {
@@ -94,7 +92,8 @@ get_variables_in_table <- function(table_name, nhanes_snapshot_folder) {
             }
           }
         }
-        variable_details_vector <- c(toupper(variable_name), toupper(table_name), label, text, instructions, targets, "")
+        use_constraints <- has_use_constraints(html_file=doc_html_file)
+        variable_details_vector <- c(toupper(variable_name), toupper(table_name), label, text, instructions, targets, use_constraints)
         all_variables[nrow(all_variables) + 1, ] <- variable_details_vector
         variable_codebook <- variable_details[variable_name][[1]]
         if (!is.null(variable_codebook)) {
@@ -135,8 +134,16 @@ get_variables_in_table <- function(table_name, nhanes_snapshot_folder) {
   }
 }
 
+has_use_constraints <- function(html_file) {
+  # Find all h4 elements
+  h4_elements <- xml_find_all(html_file, "//h4")
+  
+  # Check if any h4 element contains the specific text
+  return(any(grepl("RDC Only", xml_text(h4_elements))))
+}
+
 log_missing_codebook <- function(exception_type, exception_msg, table_name, variable_name) {
-  if( !(table_name %in% TABLES_WITHOUT_CODEBOOKS) && !(table_name %in% LIMITED_USE_TABLES) ) {
+  if( !(table_name %in% TABLES_WITHOUT_CODEBOOKS) ) {
     log_msg <- paste(exception_type, ": ", exception_msg, " (Table-Variable: ", 
                      table_name, "-", variable_name, ")", sep="")
     cat(log_msg, "\n", file=log_file, append=TRUE)
